@@ -44,6 +44,10 @@ export default class Lexer {
 
     switch (this.ch) {
       case "=":
+        /**
+         * This case can be either an ASSIGN = token or an EQ == token
+         * We check if the next character is an =, if it is, we return an EQ token
+         */
         if (this.peekChar() === "=") {
           this.readChar();
           token = newToken(TOKENS.EQ, "==");
@@ -85,6 +89,10 @@ export default class Lexer {
         break;
 
       case "!":
+        /**
+         * This case can be either a BANG ! token or a NOT_EQ != token
+         * We check if the next character is an =, if it is, we return a NOT_EQ token
+         */
         if (this.peekChar() === "=") {
           this.readChar();
           token = newToken(TOKENS.NOT_EQ, "!=");
