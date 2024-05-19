@@ -1,4 +1,4 @@
-import { KEYWORDS, TOKENS, Token, lookupIdent, newToken } from "./token";
+import { KEYWORDS, TOKENS, Token, lookupIdent, TToken } from "./token";
 
 export default class Lexer {
   private input: string;
@@ -37,8 +37,8 @@ export default class Lexer {
    * Before returning a token, we advance the pointers (this.position, this.readPosition) using readChar
    * so that when we call nextToken() again, we are looking at the next character
    **/
-  nextToken(): Token {
-    let token: Token | null = null;
+  nextToken(): TToken {
+    let token: TToken | null = null;
 
     this.skipWhitespace();
 
@@ -50,42 +50,42 @@ export default class Lexer {
          */
         if (this.peekChar() === "=") {
           this.readChar();
-          token = newToken(TOKENS.EQ, "==");
+          token = new Token(TOKENS.EQ, "==");
         } else {
-          token = newToken(TOKENS.ASSIGN, this.ch);
+          token = new Token(TOKENS.ASSIGN, this.ch);
         }
         break;
 
       case ";":
-        token = newToken(TOKENS.SEMICOLON, this.ch);
+        token = new Token(TOKENS.SEMICOLON, this.ch);
         break;
 
       case "(":
-        token = newToken(TOKENS.LPAREN, this.ch);
+        token = new Token(TOKENS.LPAREN, this.ch);
         break;
 
       case ")":
-        token = newToken(TOKENS.RPAREN, this.ch);
+        token = new Token(TOKENS.RPAREN, this.ch);
         break;
 
       case ",":
-        token = newToken(TOKENS.COMMA, this.ch);
+        token = new Token(TOKENS.COMMA, this.ch);
         break;
 
       case "+":
-        token = newToken(TOKENS.PLUS, this.ch);
+        token = new Token(TOKENS.PLUS, this.ch);
         break;
 
       case "{":
-        token = newToken(TOKENS.LBRACE, this.ch);
+        token = new Token(TOKENS.LBRACE, this.ch);
         break;
 
       case "}":
-        token = newToken(TOKENS.RBRACE, this.ch);
+        token = new Token(TOKENS.RBRACE, this.ch);
         break;
 
       case "-":
-        token = newToken(TOKENS.MINUS, this.ch);
+        token = new Token(TOKENS.MINUS, this.ch);
         break;
 
       case "!":
@@ -95,30 +95,30 @@ export default class Lexer {
          */
         if (this.peekChar() === "=") {
           this.readChar();
-          token = newToken(TOKENS.NOT_EQ, "!=");
+          token = new Token(TOKENS.NOT_EQ, "!=");
         } else {
-          token = newToken(TOKENS.BANG, this.ch);
+          token = new Token(TOKENS.BANG, this.ch);
         }
         break;
 
       case "*":
-        token = newToken(TOKENS.ASTERISK, this.ch);
+        token = new Token(TOKENS.ASTERISK, this.ch);
         break;
 
       case "/":
-        token = newToken(TOKENS.SLASH, this.ch);
+        token = new Token(TOKENS.SLASH, this.ch);
         break;
 
       case "<":
-        token = newToken(TOKENS.LT, this.ch);
+        token = new Token(TOKENS.LT, this.ch);
         break;
 
       case ">":
-        token = newToken(TOKENS.GT, this.ch);
+        token = new Token(TOKENS.GT, this.ch);
         break;
 
       case "":
-        token = newToken(TOKENS.EOF, "");
+        token = new Token(TOKENS.EOF, "");
         break;
 
       default:
@@ -129,19 +129,19 @@ export default class Lexer {
            */
           const literal = this.readIdentifier();
           const type = lookupIdent(literal as keyof typeof KEYWORDS);
-          return newToken(type, literal);
+          return new Token(type, literal);
         } else if (this.isDigit(this.ch)) {
           /**
            * If the character is a digit, we read the number
            * and return a token with type INT
            */
           const literal = this.readNumber();
-          return newToken(TOKENS.INT, literal);
+          return new Token(TOKENS.INT, literal);
         } else {
           /**
            * If nothing matches, we return an ILLEGAL token
            */
-          return newToken(TOKENS.ILLEGAL, this.ch);
+          return new Token(TOKENS.ILLEGAL, this.ch);
         }
     }
 

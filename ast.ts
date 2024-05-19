@@ -1,4 +1,4 @@
-import { Token } from "./token";
+import { TToken } from "./token";
 
 /**
  * Types
@@ -41,7 +41,7 @@ export type TExpression = {
  * Let Statement
  */
 export type TLetStatement = {
-  token: Token;
+  token: TToken;
   name: TIdentifier | null;
   value: TExpression | null;
 } & TStatement;
@@ -51,7 +51,7 @@ export type TLetStatement = {
  * Return Statement
  */
 export type TReturnStatement = {
-  token: Token;
+  token: TToken;
   returnValue: TExpression | null;
 } & TStatement;
 
@@ -63,7 +63,7 @@ export type TReturnStatement = {
  * x + 10; <-- expression statement
  */
 export type TExpressionStatement = {
-  token: Token;
+  token: TToken;
   expression: TExpression | null;
 } & TStatement;
 
@@ -78,7 +78,7 @@ export type TExpressionStatement = {
  * add(5, x);
  */
 export type TIdentifier = {
-  token: Token;
+  token: TToken;
   value: string;
 } & TExpression;
 
@@ -101,15 +101,19 @@ export class Program implements TProgram {
       return "";
     }
   }
+
+  string(): string {
+    return this.statements.map((statement) => statement.string()).join("");
+  }
 }
 
 export class LetStatement implements TLetStatement {
-  token: Token;
+  token: TToken;
   name: TIdentifier | null;
   value: TExpression | null;
 
   constructor(
-    token: Token,
+    token: TToken,
     name: TIdentifier | null,
     value: TExpression | null
   ) {
@@ -134,10 +138,10 @@ export class LetStatement implements TLetStatement {
 }
 
 export class ReturnStatement implements TReturnStatement {
-  token: Token;
+  token: TToken;
   returnValue: TExpression | null;
 
-  constructor(token: Token, returnValue: TExpression | null) {
+  constructor(token: TToken, returnValue: TExpression | null) {
     this.token = token;
     this.returnValue = returnValue;
   }
@@ -156,10 +160,10 @@ export class ReturnStatement implements TReturnStatement {
 }
 
 export class Identifier implements TIdentifier {
-  token: Token;
+  token: TToken;
   value: string;
 
-  constructor(token: Token, value: string) {
+  constructor(token: TToken, value: string) {
     this.token = token;
     this.value = value;
   }

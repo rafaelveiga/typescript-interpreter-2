@@ -1,4 +1,4 @@
-export type Token = {
+export type TToken = {
   type: TOKENS;
   literal: string;
 };
@@ -54,8 +54,14 @@ export const KEYWORDS = {
 /**
  * This is a helper function to create a new token based on the Token type
  */
-export function newToken(token: TOKENS, char: string): Token {
-  return { type: token, literal: char };
+export class Token {
+  type: TOKENS;
+  literal: string;
+
+  constructor(type: TOKENS, literal: string) {
+    this.type = type;
+    this.literal = literal;
+  }
 }
 
 /**

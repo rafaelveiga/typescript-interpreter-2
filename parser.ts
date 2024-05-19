@@ -6,12 +6,12 @@ import {
   TStatement,
 } from "./ast";
 import Lexer from "./lexer";
-import { TOKENS, Token } from "./token";
+import { TOKENS, TToken } from "./token";
 
 class Parser {
   lexer: Lexer;
-  curToken: Token;
-  peekToken: Token | undefined;
+  curToken: TToken;
+  peekToken: TToken | undefined;
   errors: string[] = [];
 
   constructor(lexer: Lexer) {
