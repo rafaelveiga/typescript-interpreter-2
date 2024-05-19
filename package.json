@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "repl": "ts-node repl.ts"
+    "repl": "ts-node repl.ts",
+    "parser": "ts-node parser.ts"
   },
   "keywords": [],
   "author": "",

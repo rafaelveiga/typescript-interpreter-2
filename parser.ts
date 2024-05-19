@@ -10,6 +10,7 @@ import {
 } from "./ast";
 import Lexer from "./lexer";
 import { TOKENS, TToken } from "./token";
+import util from "util";
 
 enum PRECEDENCE {
   LOWEST = 0,
@@ -283,3 +284,27 @@ class Parser {
 }
 
 export default Parser;
+
+const lexer = new Lexer(`
+  let x = 5;
+  let y = 10;
+  let foobar = 838383;
+
+  !5;
+
+  -15;
+
+  x * 5;
+`);
+
+const parser = new Parser(lexer);
+
+const program = parser.parseProgram();
+
+console.log(
+  util.inspect(program.statements, {
+    showHidden: false,
+    depth: null,
+    colors: true,
+  })
+);
