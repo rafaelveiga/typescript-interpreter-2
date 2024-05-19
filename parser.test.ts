@@ -19,6 +19,8 @@ describe("Parser", () => {
 
     expect(program).toBeTruthy();
 
+    console.log(program.statements);
+
     expect(program.statements.length).toBe(3);
 
     const tests = ["x", "y", "foobar"];
@@ -52,6 +54,71 @@ describe("Parser", () => {
 
     program.statements.forEach((stmt) => {
       expect(stmt.tokenLiteral()).toBe("return");
+    });
+  });
+
+  it("should parse identifier expressions", () => {
+    const input = "foobar;";
+
+    const lexer = new Lexer(input);
+
+    const parser = new Parser(lexer);
+
+    checkForParserErrors(parser);
+
+    const program = parser.parseProgram();
+
+    expect(program).toBeTruthy();
+
+    expect(program.statements.length).toBe(1);
+
+    const stmt = program.statements[0];
+
+    expect(stmt.tokenLiteral()).toBe("foobar");
+  });
+
+  it("should parse integer expressions", () => {
+    const input = "5;";
+
+    const lexer = new Lexer(input);
+
+    const parser = new Parser(lexer);
+
+    checkForParserErrors(parser);
+
+    const program = parser.parseProgram();
+
+    expect(program).toBeTruthy();
+
+    expect(program.statements.length).toBe(1);
+
+    const stmt = program.statements[0];
+
+    expect(stmt.tokenLiteral()).toBe("5");
+  });
+
+  it("should parse prefix expressions", () => {
+    const prefixTests = [
+      ["!5;", "!", "5"],
+      ["-15;", "-", "15"],
+    ];
+
+    prefixTests.forEach(([input, operator, value]) => {
+      const lexer = new Lexer(input);
+
+      const parser = new Parser(lexer);
+
+      checkForParserErrors(parser);
+
+      const program = parser.parseProgram();
+
+      expect(program).toBeTruthy();
+
+      expect(program.statements.length).toBe(1);
+
+      const stmt = program.statements[0];
+
+      expect(stmt.tokenLiteral()).toBe(operator);
     });
   });
 });

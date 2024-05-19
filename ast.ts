@@ -37,7 +37,7 @@ export type TExpression = {
 } & TNode;
 
 /**
- * Level 2
+ * Level 2.A
  * Let Statement
  */
 export type TLetStatement = {
@@ -47,7 +47,7 @@ export type TLetStatement = {
 } & TStatement;
 
 /**
- * Level 2
+ * Level 2.A
  * Return Statement
  */
 export type TReturnStatement = {
@@ -56,7 +56,7 @@ export type TReturnStatement = {
 } & TStatement;
 
 /**
- * Level 2
+ * Level 2.A
  * Expression Statement
  * Expressions are statements, so we extend the TStatement interface
  * let x = 5; <-- let statement
@@ -68,7 +68,7 @@ export type TExpressionStatement = {
 } & TStatement;
 
 /**
- * Level 3
+ * Level 2.B
  * Identifier
  * Identifiers can be used as expressions, so we extend the TExpression interface
  * let x = 5;
@@ -80,6 +80,25 @@ export type TExpressionStatement = {
 export type TIdentifier = {
   token: TToken;
   value: string;
+} & TExpression;
+
+/**
+ * Level 2.B
+ * Integer Literal
+ */
+export type TIntegerLiteral = {
+  token: TToken;
+  value: number;
+} & TExpression;
+
+/**
+ * Level 2.B
+ * Prefix Expression
+ */
+export type TPrefixExpression = {
+  token: TToken;
+  operator: string;
+  right: TExpression | null;
 } & TExpression;
 
 /**
@@ -107,6 +126,9 @@ export class Program implements TProgram {
   }
 }
 
+/**
+ * Level 2.A
+ */
 export class LetStatement implements TLetStatement {
   token: TToken;
   name: TIdentifier | null;
@@ -159,6 +181,31 @@ export class ReturnStatement implements TReturnStatement {
   }
 }
 
+export class ExpressionStatement implements TExpressionStatement {
+  token: TToken;
+  expression: TExpression | null;
+
+  constructor(token: TToken, expression: TExpression | null) {
+    this.token = token;
+    this.expression = expression;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  statementNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return this.expression?.string() || "";
+  }
+}
+
+/**
+ * Level 2.B
+ */
 export class Identifier implements TIdentifier {
   token: TToken;
   value: string;
@@ -178,5 +225,55 @@ export class Identifier implements TIdentifier {
 
   string(): string {
     return this.value;
+  }
+}
+
+export class IntegerLiteral implements TIntegerLiteral {
+  token: TToken;
+  value: number;
+
+  constructor(token: TToken, value: number) {
+    this.token = token;
+    this.value = value;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return this.token.literal;
+  }
+}
+
+export class PrefixExpression implements TPrefixExpression {
+  token: TToken;
+  operator: string;
+  right: TExpression | null;
+
+  constructor(
+    token: TToken,
+    operator: string,
+    right: TExpression | null = null
+  ) {
+    this.token = token;
+    this.operator = operator;
+    this.right = right;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return `(${this.operator}${this.right?.string()})`;
   }
 }

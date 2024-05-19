@@ -1,6 +1,9 @@
 import {
+  ExpressionStatement,
   Identifier,
+  IntegerLiteral,
   LetStatement,
+  PrefixExpression,
   Program,
   ReturnStatement,
   TStatement,
@@ -8,11 +11,23 @@ import {
 import Lexer from "./lexer";
 import { TOKENS, TToken } from "./token";
 
+enum PRECEDENCE {
+  LOWEST = 0,
+  EQUALS = 1, // ==
+  LESSGREATER = 2, // > or <
+  SUM = 3, // +
+  PRODUCT = 4, // *
+  PREFIX = 5, // -X or !X
+  CALL = 6, // myFunction(X)
+}
+
 class Parser {
   lexer: Lexer;
   curToken: TToken;
   peekToken: TToken | undefined;
   errors: string[] = [];
+  prefixParseFns: { [key: string]: Function } = {};
+  infixParseFns: { [key: string]: Function } = {};
 
   constructor(lexer: Lexer) {
     this.lexer = lexer;
@@ -20,6 +35,11 @@ class Parser {
     const firstToken = this.lexer.nextToken();
     this.curToken = firstToken;
     this.peekToken = this.lexer.nextToken();
+
+    this.registerPrefix(TOKENS.IDENT, this.parseIdentifier.bind(this));
+    this.registerPrefix(TOKENS.INT, this.parseIntegerLiteral.bind(this));
+    this.registerPrefix(TOKENS.BANG, this.parsePrefixExpression.bind(this));
+    this.registerPrefix(TOKENS.MINUS, this.parsePrefixExpression.bind(this));
 
     return this;
   }
@@ -66,7 +86,7 @@ class Parser {
       case TOKENS.RETURN:
         return this.parseReturnStatement();
       default:
-        return null;
+        return this.parseExpressionStatement();
     }
   }
 
@@ -110,7 +130,18 @@ class Parser {
       return null;
     }
 
-    // TODO: We're skipping the expressions until we implement them
+    /**
+     * Next, we advance the tokens until we encounter a semicolon token
+     * This is because the value of a let statement can be an expression
+     * If the current token is not assign, that means we are in the "expression zone", a.k.a.
+     * the part after `let x =`
+     */
+    while (!this.curTokenIs(TOKENS.SEMICOLON)) {
+      if (!this.curTokenIs(TOKENS.ASSIGN)) {
+        letStatement.value = this.parseExpression(PRECEDENCE.LOWEST);
+      }
+      this.nextToken();
+    }
 
     return letStatement;
   }
@@ -127,12 +158,78 @@ class Parser {
 
     this.nextToken();
 
-    // TODO: We're skipping the expressions until we implement them
     while (!this.curTokenIs(TOKENS.SEMICOLON)) {
+      returnStatement.returnValue = this.parseExpression(PRECEDENCE.LOWEST);
       this.nextToken();
     }
 
     return returnStatement;
+  }
+
+  /**
+   * This method is responsible for parsing expression statements
+   */
+  parseExpressionStatement() {
+    const stmt = new ExpressionStatement(this.curToken, null);
+
+    stmt.expression = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (this.peekTokenIs(TOKENS.SEMICOLON)) {
+      this.nextToken();
+    }
+
+    return stmt;
+  }
+
+  /**
+   * This method is responsible for parsing expressions
+   */
+  parseExpression(precedence: number) {
+    const prefix = this.prefixParseFns[this.curToken.type];
+
+    if (!prefix) {
+      this.noPrefixParseFnError(this.curToken.type);
+      return null;
+    }
+
+    let leftExp = prefix();
+
+    return leftExp;
+  }
+
+  /**
+   * Expression types
+   */
+  parseIdentifier(): Identifier {
+    return new Identifier(this.curToken, this.curToken.literal);
+  }
+
+  parseIntegerLiteral() {
+    const stmt = new IntegerLiteral(
+      this.curToken,
+      parseInt(this.curToken.literal)
+    );
+
+    if (Number.isNaN(parseInt(this.curToken.literal))) {
+      this.errors.push(`could not parse ${this.curToken.literal} as integer`);
+
+      return null;
+    }
+
+    return stmt;
+  }
+
+  parsePrefixExpression() {
+    const prefixExpression = new PrefixExpression(
+      this.curToken,
+      this.curToken.literal
+    );
+
+    this.nextToken();
+
+    prefixExpression.right = this.parseExpression(PRECEDENCE.PREFIX);
+
+    return prefixExpression;
   }
 
   /**
@@ -164,6 +261,24 @@ class Parser {
   peekError(t: TOKENS) {
     const msg = `expected next token to be ${t}, got ${this.peekToken?.type} instead`;
     this.errors.push(msg);
+  }
+
+  noPrefixParseFnError(t: TOKENS) {
+    const msg = `no prefix parse function for ${t} found`;
+    this.errors.push(msg);
+  }
+
+  /**
+   * This method is used to register prefix and infix functions
+   * Prefix functions are used to parse tokens that appear at the beginning of an expression
+   * Infix functions are used to parse tokens that appear in the middle of an expression
+   */
+  registerPrefix(tokenType: string, fn: Function) {
+    this.prefixParseFns[tokenType] = fn;
+  }
+
+  registerInfix(tokenType: string, fn: Function) {
+    this.infixParseFns[tokenType] = fn;
   }
 }
 

@@ -7,7 +7,7 @@ describe("AST", () => {
       new LetStatement(
         new Token(TOKENS.LET, "let"),
         new Identifier(new Token(TOKENS.IDENT, "myVar"), "myVar"),
-        new IntegerLiteral(new Token(TOKENS.INT, "5"), 5)
+        new Identifier(new Token(TOKENS.IDENT, "otherVar"), "otherVar")
       ),
       new ReturnStatement(
         new Token(TOKENS.RETURN, "return"),
@@ -15,6 +15,6 @@ describe("AST", () => {
       ),
     ]);
 
-    expect(program.string()).toEqual("let myVar = 5;return myVar;");
+    expect(program.string()).toEqual("let myVar = otherVar;return myVar;");
   });
 });
