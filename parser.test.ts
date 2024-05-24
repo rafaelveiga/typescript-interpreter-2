@@ -1,3 +1,9 @@
+import {
+  Boolean,
+  ExpressionStatement,
+  InfixExpression,
+  IntegerLiteral,
+} from "./ast";
 import Lexer from "./lexer";
 import Parser from "./parser";
 
@@ -18,8 +24,6 @@ describe("Parser", () => {
     const program = parser.parseProgram();
 
     expect(program).toBeTruthy();
-
-    console.log(program.statements);
 
     expect(program.statements.length).toBe(3);
 
@@ -119,6 +123,76 @@ describe("Parser", () => {
       const stmt = program.statements[0];
 
       expect(stmt.tokenLiteral()).toBe(operator);
+    });
+  });
+
+  it("should parse infix expressions", () => {
+    const testCases = [
+      ["5 + 5", 5, "+", 5],
+      ["5 - 5", 5, "-", 5],
+      ["5 * 5", 5, "*", 5],
+      ["5 / 5", 5, "/", 5],
+      ["5 > 5", 5, ">", 5],
+      ["5 < 5", 5, "<", 5],
+      ["5 == 5", 5, "==", 5],
+      ["5 != 5", 5, "!=", 5],
+    ];
+
+    testCases.forEach(([input, leftValue, operator, rightValue]) => {
+      const lexer = new Lexer(input as string);
+
+      const parser = new Parser(lexer);
+
+      checkForParserErrors(parser);
+
+      const program = parser.parseProgram();
+
+      expect(program).toBeTruthy();
+
+      expect(program.statements.length).toBe(1);
+
+      const expression = program.statements[0] as ExpressionStatement;
+
+      expect(expression).toBeInstanceOf(ExpressionStatement);
+
+      const infixExpression = expression.expression as InfixExpression;
+      expect(infixExpression).toBeInstanceOf(InfixExpression);
+
+      const infixExpressionLeft = infixExpression.left as IntegerLiteral;
+      const infixExpressionRight = infixExpression.right as IntegerLiteral;
+
+      expect(infixExpression.left).toBeInstanceOf(IntegerLiteral);
+      expect(infixExpressionLeft.value).toBe(leftValue);
+      expect(infixExpression.operator).toBe(operator);
+      expect(infixExpression.right).toBeInstanceOf(IntegerLiteral);
+      expect(infixExpressionRight.value).toBe(rightValue);
+    });
+  });
+
+  it("should parse boolean expressions", () => {
+    const testCases = [
+      ["true;", true],
+      ["false;", false],
+    ];
+
+    testCases.forEach(([input, value]) => {
+      const lexer = new Lexer(input as string);
+
+      const parser = new Parser(lexer);
+
+      checkForParserErrors(parser);
+
+      const program = parser.parseProgram();
+
+      expect(program).toBeTruthy();
+
+      expect(program.statements.length).toBe(1);
+
+      const boolean = program.statements[0] as ExpressionStatement;
+      const booleanExpression = boolean.expression as Boolean;
+
+      expect(booleanExpression.value).toBe(value);
+      expect(booleanExpression).toBeInstanceOf(Boolean);
     });
   });
 });

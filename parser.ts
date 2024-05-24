@@ -1,11 +1,15 @@
 import {
+  Boolean,
   ExpressionStatement,
   Identifier,
+  IfExpression,
+  InfixExpression,
   IntegerLiteral,
   LetStatement,
   PrefixExpression,
   Program,
   ReturnStatement,
+  TExpression,
   TStatement,
 } from "./ast";
 import Lexer from "./lexer";
@@ -21,6 +25,17 @@ enum PRECEDENCE {
   PREFIX = 5, // -X or !X
   CALL = 6, // myFunction(X)
 }
+
+const PRECENDENCE_TABLE: { [key: string]: number } = {
+  [TOKENS.EQ]: PRECEDENCE.EQUALS,
+  [TOKENS.NOT_EQ]: PRECEDENCE.EQUALS,
+  [TOKENS.LT]: PRECEDENCE.LESSGREATER,
+  [TOKENS.GT]: PRECEDENCE.LESSGREATER,
+  [TOKENS.PLUS]: PRECEDENCE.SUM,
+  [TOKENS.MINUS]: PRECEDENCE.SUM,
+  [TOKENS.SLASH]: PRECEDENCE.PRODUCT,
+  [TOKENS.ASTERISK]: PRECEDENCE.PRODUCT,
+};
 
 class Parser {
   lexer: Lexer;
@@ -41,6 +56,19 @@ class Parser {
     this.registerPrefix(TOKENS.INT, this.parseIntegerLiteral.bind(this));
     this.registerPrefix(TOKENS.BANG, this.parsePrefixExpression.bind(this));
     this.registerPrefix(TOKENS.MINUS, this.parsePrefixExpression.bind(this));
+    this.registerPrefix(TOKENS.TRUE, this.parseBoolean.bind(this));
+    this.registerPrefix(TOKENS.FALSE, this.parseBoolean.bind(this));
+    this.registerPrefix(TOKENS.LPAREN, this.parseGroupedExpression.bind(this));
+    this.registerPrefix(TOKENS.IF, this.parseIfExpression.bind(this));
+
+    this.registerInfix(TOKENS.PLUS, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.MINUS, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.SLASH, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.ASTERISK, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.EQ, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.NOT_EQ, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.LT, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.GT, this.parseInfixExpression.bind(this));
 
     return this;
   }
@@ -195,6 +223,22 @@ class Parser {
 
     let leftExp = prefix();
 
+    while (
+      !this.peekTokenIs(TOKENS.SEMICOLON) &&
+      precedence < this.peekPrecedence() &&
+      this.peekToken
+    ) {
+      const infix = this.infixParseFns[this.peekToken.type];
+
+      if (!infix) {
+        return leftExp;
+      }
+
+      this.nextToken();
+
+      leftExp = infix(leftExp);
+    }
+
     return leftExp;
   }
 
@@ -220,6 +264,22 @@ class Parser {
     return stmt;
   }
 
+  parseBoolean() {
+    return new Boolean(this.curToken, this.curTokenIs(TOKENS.TRUE));
+  }
+
+  parseGroupedExpression() {
+    this.nextToken();
+
+    const exp = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.expectPeek(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    return exp;
+  }
+
   parsePrefixExpression() {
     const prefixExpression = new PrefixExpression(
       this.curToken,
@@ -231,6 +291,23 @@ class Parser {
     prefixExpression.right = this.parseExpression(PRECEDENCE.PREFIX);
 
     return prefixExpression;
+  }
+
+  parseInfixExpression(left: TExpression) {
+    const expression = new InfixExpression(
+      this.curToken,
+      left,
+      this.curToken.literal,
+      null
+    );
+
+    const precedence = this.curPrecedence();
+
+    this.nextToken();
+
+    expression.right = this.parseExpression(precedence);
+
+    return expression;
   }
 
   /**
@@ -281,30 +358,48 @@ class Parser {
   registerInfix(tokenType: string, fn: Function) {
     this.infixParseFns[tokenType] = fn;
   }
+
+  /**
+   * This method is used to get the precedence of the current token
+   */
+  curPrecedence() {
+    if (!this.curToken) return PRECEDENCE.LOWEST;
+    const p = PRECENDENCE_TABLE[this.curToken?.type];
+    return p ? p : PRECEDENCE.LOWEST;
+  }
+
+  /**
+   * This method is used to get the precedence of the next token
+   */
+  peekPrecedence() {
+    if (!this.peekToken) return PRECEDENCE.LOWEST;
+    const p = PRECENDENCE_TABLE[this.peekToken?.type];
+    return p ? p : PRECEDENCE.LOWEST;
+  }
 }
 
 export default Parser;
 
-const lexer = new Lexer(`
-  let x = 5;
-  let y = 10;
-  let foobar = 838383;
+// const lexer = new Lexer(`
+//   let x = 5;
+//   let y = 10;
+//   let foobar = 838383;
 
-  !5;
+//   !5;
 
-  -15;
+//   -15;
 
-  x * 5;
-`);
+//   x * 5;
+// `);
 
-const parser = new Parser(lexer);
+// const parser = new Parser(lexer);
 
-const program = parser.parseProgram();
+// const program = parser.parseProgram();
 
-console.log(
-  util.inspect(program.statements, {
-    showHidden: false,
-    depth: null,
-    colors: true,
-  })
-);
+// console.log(
+//   util.inspect(program.statements, {
+//     showHidden: false,
+//     depth: null,
+//     colors: true,
+//   })
+// );

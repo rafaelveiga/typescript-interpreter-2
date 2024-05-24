@@ -68,6 +68,15 @@ export type TExpressionStatement = {
 } & TStatement;
 
 /**
+ * Level 2.A
+ * Block Statement
+ */
+export type TBlockStatement = {
+  token: TToken;
+  statements: TStatement[];
+} & TStatement;
+
+/**
  * Level 2.B
  * Identifier
  * Identifiers can be used as expressions, so we extend the TExpression interface
@@ -93,10 +102,41 @@ export type TIntegerLiteral = {
 
 /**
  * Level 2.B
+ * Boolean
+ */
+export type TBoolean = {
+  token: TToken;
+  value: boolean;
+} & TExpression;
+
+/**
+ * Level 2.B
+ * If Expression
+ */
+export type TIfExpression = {
+  token: TToken;
+  condition: TExpression | null;
+  consequence: TBlockStatement | null;
+  alternative: TBlockStatement | null;
+} & TExpression;
+
+/**
+ * Level 2.B
  * Prefix Expression
  */
 export type TPrefixExpression = {
   token: TToken;
+  operator: string;
+  right: TExpression | null;
+} & TExpression;
+
+/**
+ * Level 2.B
+ * Infix Expression
+ */
+export type TInfixExpression = {
+  token: TToken;
+  left: TExpression | null;
   operator: string;
   right: TExpression | null;
 } & TExpression;
@@ -203,6 +243,28 @@ export class ExpressionStatement implements TExpressionStatement {
   }
 }
 
+export class BlockStatement implements TBlockStatement {
+  token: TToken;
+  statements: TStatement[];
+
+  constructor(token: TToken, statements: TStatement[]) {
+    this.token = token;
+    this.statements = statements;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  statementNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return this.statements.map((statement) => statement.string()).join("");
+  }
+}
+
 /**
  * Level 2.B
  */
@@ -250,6 +312,61 @@ export class IntegerLiteral implements TIntegerLiteral {
   }
 }
 
+export class Boolean implements TBoolean {
+  token: TToken;
+  value: boolean;
+
+  constructor(token: TToken, value: boolean) {
+    this.token = token;
+    this.value = value;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return this.token.literal;
+  }
+}
+
+export class IfExpression implements TIfExpression {
+  token: TToken;
+  condition: TExpression | null;
+  consequence: TBlockStatement | null;
+  alternative: TBlockStatement | null;
+
+  constructor(
+    token: TToken,
+    condition: TExpression | null,
+    consequence: TBlockStatement | null,
+    alternative: TBlockStatement | null
+  ) {
+    this.token = token;
+    this.condition = condition;
+    this.consequence = consequence;
+    this.alternative = alternative;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return `if ${this.condition?.string()} ${this.consequence?.string()} ${
+      this.alternative ? `else ${this.alternative.string()}` : ""
+    }`;
+  }
+}
+
 export class PrefixExpression implements TPrefixExpression {
   token: TToken;
   operator: string;
@@ -275,5 +392,36 @@ export class PrefixExpression implements TPrefixExpression {
 
   string(): string {
     return `(${this.operator}${this.right?.string()})`;
+  }
+}
+
+export class InfixExpression implements TInfixExpression {
+  token: TToken;
+  left: TExpression | null;
+  operator: string;
+  right: TExpression | null;
+
+  constructor(
+    token: TToken,
+    left: TExpression | null,
+    operator: string,
+    right: TExpression | null
+  ) {
+    this.token = token;
+    this.left = left;
+    this.operator = operator;
+    this.right = right;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return `(${this.left?.string()} ${this.operator} ${this.right?.string()})`;
   }
 }
