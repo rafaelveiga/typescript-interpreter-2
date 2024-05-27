@@ -1,4 +1,5 @@
 import {
+  BlockStatement,
   Boolean,
   ExpressionStatement,
   Identifier,
@@ -280,6 +281,58 @@ class Parser {
     return exp;
   }
 
+  parseIfExpression() {
+    const expression = new IfExpression(this.curToken, null, null, null);
+
+    if (!this.expectPeek(TOKENS.LPAREN)) {
+      return null;
+    }
+
+    this.nextToken();
+
+    expression.condition = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.expectPeek(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    if (!this.expectPeek(TOKENS.LBRACE)) {
+      return null;
+    }
+
+    expression.consequence = this.parseBlockStatement();
+
+    if (this.peekTokenIs(TOKENS.ELSE)) {
+      this.nextToken();
+
+      if (!this.expectPeek(TOKENS.LBRACE)) {
+        return null;
+      }
+
+      expression.alternative = this.parseBlockStatement();
+    }
+
+    return expression;
+  }
+
+  parseBlockStatement() {
+    const blockStatement = new BlockStatement(this.curToken, []);
+
+    this.nextToken();
+
+    while (!this.curTokenIs(TOKENS.RBRACE)) {
+      const stmt = this.parseStatement();
+
+      if (stmt) {
+        blockStatement.statements.push(stmt);
+      }
+
+      this.nextToken();
+    }
+
+    return blockStatement;
+  }
+
   parsePrefixExpression() {
     const prefixExpression = new PrefixExpression(
       this.curToken,
@@ -380,26 +433,32 @@ class Parser {
 
 export default Parser;
 
-// const lexer = new Lexer(`
-//   let x = 5;
-//   let y = 10;
-//   let foobar = 838383;
+const lexer = new Lexer(`
+  let x = 5;
+  let y = 10;
+  let foobar = 838383;
 
-//   !5;
+  !5;
 
-//   -15;
+  -15;
 
-//   x * 5;
-// `);
+  x * 5;
 
-// const parser = new Parser(lexer);
+  if (x < y) {
+    return true;
+  } else {
+    return false;
+  }
+`);
 
-// const program = parser.parseProgram();
+const parser = new Parser(lexer);
 
-// console.log(
-//   util.inspect(program.statements, {
-//     showHidden: false,
-//     depth: null,
-//     colors: true,
-//   })
-// );
+const program = parser.parseProgram();
+
+console.log(
+  util.inspect(program.statements, {
+    showHidden: false,
+    depth: null,
+    colors: true,
+  })
+);

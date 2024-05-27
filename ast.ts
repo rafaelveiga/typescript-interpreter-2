@@ -120,6 +120,12 @@ export type TIfExpression = {
   alternative: TBlockStatement | null;
 } & TExpression;
 
+export type TFunctionLiteral = {
+  token: TToken;
+  parameters: TIdentifier[];
+  body: TBlockStatement | null;
+} & TExpression;
+
 /**
  * Level 2.B
  * Prefix Expression
@@ -309,6 +315,36 @@ export class IntegerLiteral implements TIntegerLiteral {
 
   string(): string {
     return this.token.literal;
+  }
+}
+
+export class FunctionLiteral implements TFunctionLiteral {
+  token: TToken;
+  parameters: TIdentifier[];
+  body: TBlockStatement | null;
+
+  constructor(
+    token: TToken,
+    parameters: TIdentifier[],
+    body: TBlockStatement | null
+  ) {
+    this.token = token;
+    this.parameters = parameters;
+    this.body = body;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return `${this.tokenLiteral()}(${this.parameters
+      .map((param) => param.string())
+      .join(", ")}) ${this.body?.string()}`;
   }
 }
 
