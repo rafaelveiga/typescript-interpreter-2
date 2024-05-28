@@ -2,6 +2,7 @@ import {
   BlockStatement,
   Boolean,
   ExpressionStatement,
+  FunctionLiteral,
   Identifier,
   IfExpression,
   InfixExpression,
@@ -11,6 +12,7 @@ import {
   Program,
   ReturnStatement,
   TExpression,
+  TIdentifier,
   TStatement,
 } from "./ast";
 import Lexer from "./lexer";
@@ -61,6 +63,7 @@ class Parser {
     this.registerPrefix(TOKENS.FALSE, this.parseBoolean.bind(this));
     this.registerPrefix(TOKENS.LPAREN, this.parseGroupedExpression.bind(this));
     this.registerPrefix(TOKENS.IF, this.parseIfExpression.bind(this));
+    this.registerPrefix(TOKENS.FUNCTION, this.parseFunctionLiteral.bind(this));
 
     this.registerInfix(TOKENS.PLUS, this.parseInfixExpression.bind(this));
     this.registerInfix(TOKENS.MINUS, this.parseInfixExpression.bind(this));
@@ -265,6 +268,56 @@ class Parser {
     return stmt;
   }
 
+  parseFunctionLiteral() {
+    const fn = new FunctionLiteral(this.curToken, null, null);
+
+    if (!this.expectPeek(TOKENS.LPAREN)) {
+      return null;
+    }
+
+    fn.parameters = this.parseFunctionParameters();
+
+    if (!this.expectPeek(TOKENS.LBRACE)) {
+      return null;
+    }
+
+    fn.body = this.parseBlockStatement();
+
+    return fn;
+  }
+
+  parseFunctionParameters() {
+    const identifiers: TIdentifier[] = [];
+
+    // If no parameters, return empty array
+    if (this.peekTokenIs(TOKENS.RPAREN)) {
+      this.nextToken();
+      return identifiers;
+    }
+
+    this.nextToken();
+
+    // Parse first parameter
+    const ident = new Identifier(this.curToken, this.curToken.literal);
+    identifiers.push(ident);
+
+    // Parse remaining parameters
+    while (this.peekTokenIs(TOKENS.COMMA)) {
+      this.nextToken();
+      this.nextToken();
+
+      const ident = new Identifier(this.curToken, this.curToken.literal);
+      identifiers.push(ident);
+    }
+
+    // Check for closing parenthesis
+    if (!this.expectPeek(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    return identifiers;
+  }
+
   parseBoolean() {
     return new Boolean(this.curToken, this.curTokenIs(TOKENS.TRUE));
   }
@@ -449,6 +502,10 @@ const lexer = new Lexer(`
   } else {
     return false;
   }
+
+  let myFn = fn(x, y) {
+    x + y;
+  };
 `);
 
 const parser = new Parser(lexer);

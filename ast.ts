@@ -122,7 +122,7 @@ export type TIfExpression = {
 
 export type TFunctionLiteral = {
   token: TToken;
-  parameters: TIdentifier[];
+  parameters: TIdentifier[] | null;
   body: TBlockStatement | null;
 } & TExpression;
 
@@ -320,12 +320,12 @@ export class IntegerLiteral implements TIntegerLiteral {
 
 export class FunctionLiteral implements TFunctionLiteral {
   token: TToken;
-  parameters: TIdentifier[];
+  parameters: TIdentifier[] | null;
   body: TBlockStatement | null;
 
   constructor(
     token: TToken,
-    parameters: TIdentifier[],
+    parameters: TIdentifier[] | null,
     body: TBlockStatement | null
   ) {
     this.token = token;
@@ -342,9 +342,11 @@ export class FunctionLiteral implements TFunctionLiteral {
   }
 
   string(): string {
-    return `${this.tokenLiteral()}(${this.parameters
-      .map((param) => param.string())
-      .join(", ")}) ${this.body?.string()}`;
+    return `${this.tokenLiteral()}(${
+      this.parameters
+        ? this.parameters.map((param) => param.string()).join(", ")
+        : ""
+    }) ${this.body?.string()}`;
   }
 }
 
