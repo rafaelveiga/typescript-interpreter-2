@@ -126,6 +126,12 @@ export type TFunctionLiteral = {
   body: TBlockStatement | null;
 } & TExpression;
 
+export type TCallExpression = {
+  token: TToken;
+  function: TExpression | null;
+  arguments: TExpression[] | null;
+} & TExpression;
+
 /**
  * Level 2.B
  * Prefix Expression
@@ -461,5 +467,35 @@ export class InfixExpression implements TInfixExpression {
 
   string(): string {
     return `(${this.left?.string()} ${this.operator} ${this.right?.string()})`;
+  }
+}
+
+export class CallExpression implements TCallExpression {
+  token: TToken;
+  function: TExpression | null;
+  arguments: TExpression[] | null;
+
+  constructor(
+    token: TToken,
+    fn: TExpression | null,
+    args: TExpression[] | null
+  ) {
+    this.token = token;
+    this.function = fn;
+    this.arguments = args;
+  }
+
+  tokenLiteral(): string {
+    return this.token.literal;
+  }
+
+  expressionNode(): TNode {
+    return this;
+  }
+
+  string(): string {
+    return `${this.function?.string()}(${this.arguments?.map((arg) =>
+      arg.string()
+    )})`;
   }
 }

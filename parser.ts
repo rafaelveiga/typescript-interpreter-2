@@ -1,6 +1,7 @@
 import {
   BlockStatement,
   Boolean,
+  CallExpression,
   ExpressionStatement,
   FunctionLiteral,
   Identifier,
@@ -38,6 +39,7 @@ const PRECENDENCE_TABLE: { [key: string]: number } = {
   [TOKENS.MINUS]: PRECEDENCE.SUM,
   [TOKENS.SLASH]: PRECEDENCE.PRODUCT,
   [TOKENS.ASTERISK]: PRECEDENCE.PRODUCT,
+  [TOKENS.LPAREN]: PRECEDENCE.CALL,
 };
 
 class Parser {
@@ -73,6 +75,7 @@ class Parser {
     this.registerInfix(TOKENS.NOT_EQ, this.parseInfixExpression.bind(this));
     this.registerInfix(TOKENS.LT, this.parseInfixExpression.bind(this));
     this.registerInfix(TOKENS.GT, this.parseInfixExpression.bind(this));
+    this.registerInfix(TOKENS.LPAREN, this.parseCallExpression.bind(this));
 
     return this;
   }
@@ -163,16 +166,11 @@ class Parser {
       return null;
     }
 
-    /**
-     * Next, we advance the tokens until we encounter a semicolon token
-     * This is because the value of a let statement can be an expression
-     * If the current token is not assign, that means we are in the "expression zone", a.k.a.
-     * the part after `let x =`
-     */
-    while (!this.curTokenIs(TOKENS.SEMICOLON)) {
-      if (!this.curTokenIs(TOKENS.ASSIGN)) {
-        letStatement.value = this.parseExpression(PRECEDENCE.LOWEST);
-      }
+    this.nextToken();
+
+    letStatement.value = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (!this.peekTokenIs(TOKENS.SEMICOLON)) {
       this.nextToken();
     }
 
@@ -191,8 +189,9 @@ class Parser {
 
     this.nextToken();
 
-    while (!this.curTokenIs(TOKENS.SEMICOLON)) {
-      returnStatement.returnValue = this.parseExpression(PRECEDENCE.LOWEST);
+    returnStatement.returnValue = this.parseExpression(PRECEDENCE.LOWEST);
+
+    if (this.peekTokenIs(TOKENS.SEMICOLON)) {
       this.nextToken();
     }
 
@@ -368,6 +367,43 @@ class Parser {
     return expression;
   }
 
+  parseCallExpression(fn: TExpression) {
+    const exp = new CallExpression(this.curToken, fn, []);
+
+    exp.arguments = this.parseCallArguments();
+
+    return exp;
+  }
+
+  /**
+   * Shockingly similar to parseFunctionParameters
+   */
+  parseCallArguments() {
+    const args: TExpression[] = [];
+
+    if (this.peekTokenIs(TOKENS.RPAREN)) {
+      this.nextToken();
+      return args;
+    }
+
+    this.nextToken();
+
+    args.push(this.parseExpression(PRECEDENCE.LOWEST));
+
+    while (this.peekTokenIs(TOKENS.COMMA)) {
+      this.nextToken();
+      this.nextToken();
+
+      args.push(this.parseExpression(PRECEDENCE.LOWEST));
+    }
+
+    if (!this.expectPeek(TOKENS.RPAREN)) {
+      return null;
+    }
+
+    return args;
+  }
+
   parseBlockStatement() {
     const blockStatement = new BlockStatement(this.curToken, []);
 
@@ -506,6 +542,8 @@ const lexer = new Lexer(`
   let myFn = fn(x, y) {
     x + y;
   };
+
+  myFn(1, 3)
 `);
 
 const parser = new Parser(lexer);
